@@ -1,53 +1,47 @@
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: mysql
-  labels:
-    app: mysql
-spec:
-  clusterIP: None
-  ports:
-    - name: tcp
-      protocol: TCP
-      port: 3306
-  selector:
-    app: mysql
----
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: mysql-statefulset
+  name: postgres-deployment
   labels:
-    app: mysql
+    type: db
     author: jeevan
 spec:
   replicas: 2
-  serviceName: mysql
   selector:
     matchLabels:
-      app: mysql
+      type: db
   template:
     metadata:
-      name: mysql-pod
+      name: postgres-pod
       labels:
-        app: mysql
+        type: db
     spec:
       containers:
-        - name: mysql
-          image: mysql:5
-          ports:
-            - name: tcp
-              protocol: TCP
-              containerPort: 3306
+        - name: mypostgres
+          image: postgres
           env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: jeevan
+            - name: postgres_password
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: postgres_User
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: user
+            - name: postgres_db
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: dbname
           volumeMounts:
-            - name: mysql-volume
-              mountpath: /mysql/lib/mysql
+             - name: postgres-volume
+               mountPath: /var/lib/postgresql/data
+
       volumes:
-        - name: mysql-volume
+        - name: postgres-persistent-storage
           persistentVolumeClaim:
-          claimName: my-pvc
+            claimName: postgres-pv-claim
 ...
